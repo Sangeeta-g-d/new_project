@@ -335,21 +335,27 @@
 
                 submitAllButton.addEventListener('click', function () {
                     // Collect data from all data rows
-                    const submittedData = data.selected_rows.map((row, rowIndex) => {
-                        const rowData = {};
-                        Object.entries(row).forEach(([key, value]) => {
-                            if (key === 'Quality') {
-                                rowData[key] = selectedQualities[rowIndex];
-                            } else if (key === 'Quote (Rs./UOM)') {
-                                const quoteInput = document.querySelector(`[name="quote_${rowIndex}"]`);
-                                rowData[key] = quoteInput ? quoteInput.value : null;
-                            } else {
-                                rowData[key] = value;
-                            }
-                        });
-                        console.log('Row Data:', rowData);
-                        return rowData;
-                    });
+                    // Collect data from all data rows
+const submittedData = data.selected_rows.map((row, rowIndex) => {
+    const rowData = {};
+    Object.entries(row).forEach(([key, value]) => {
+        if (key === 'Quality') {
+            rowData[key] = selectedQualities[rowIndex];
+        } else if (key === 'Quote (Rs./UOM)') {
+            const quoteInput = document.querySelector(`[name="quote_${rowIndex}"]`);
+            rowData[key] = quoteInput ? quoteInput.value : null;
+        } else {
+            rowData[key] = value;
+        }
+    });
+
+    // Include 'Quality' data in the rowData object
+    rowData['Quality'] = selectedQualities[rowIndex];
+
+    console.log('Row Data:', rowData);
+    return rowData;
+});
+
 
                     console.log('Submitted Data:', submittedData);
 
