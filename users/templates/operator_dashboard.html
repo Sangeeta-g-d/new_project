@@ -170,15 +170,15 @@
 
       //table script
      
-      document.getElementById('commission_agent').addEventListener('change', function () {
+      document.getElementById('commission_agent').addEventListener('change', function() {
     const selectedCommission = this.value;
     fetch(`/get_lot_id/?commission_agent=${selectedCommission}`)
         .then(response => response.json())
         .then(data => {
-            console.log(data); // Log the response to the console
+            console.log(data);  // Log the response to the console
 
             const resultTable = document.getElementById('resultTable');
-            resultTable.innerHTML = ''; // Clear previous results
+            resultTable.innerHTML = '';  // Clear previous results
 
             if (data.selected_rows && data.selected_rows.length > 0) {
                 // Create table element with classes
@@ -203,20 +203,21 @@
                     const quoteHeaderCell = headerRow.insertCell();
                     quoteHeaderCell.innerHTML = 'Quote (Rs./UOM)';
                 }
-
+                
                 let errorMessageContainer = document.getElementById('errorMessageContainer');
-                if (!errorMessageContainer) {
-                    errorMessageContainer = document.createElement('div');
-                    errorMessageContainer.id = 'errorMessageContainer';
-                    document.body.insertBefore(errorMessageContainer, document.getElementById('resultTable'));
-                }
+if (!errorMessageContainer) {
+    errorMessageContainer = document.createElement('div');
+    errorMessageContainer.id = 'errorMessageContainer';
+    document.body.insertBefore(errorMessageContainer, document.getElementById('resultTable'));
+}
 
                 // Create data rows
                 const selectedQualities = new Array();
                 data.selected_rows.forEach((row, rowIndex) => {
                     const dataRow = table.insertRow();
                     selectedQualities[rowIndex] = row.Quality;
-
+                    // Store the selected quality for each row
+                 
                     Object.entries(row).forEach(([key, value]) => {
                         const cell = dataRow.insertCell();
 
@@ -232,62 +233,67 @@
                                 selectElement.appendChild(optionElement);
                             });
 
-                            // Set the selected option based on the stored selected quality
-                            selectElement.value = selectedQualities[rowIndex];
-
-                            // Add an event listener to update the Quotes input placeholder
-                            selectElement.addEventListener('change', function () {
+                           // Set the selected option based on the stored selected quality
+            selectElement.value = selectedQualities[rowIndex];
+                            // Add an event  listener to update the Quotes input placeholder
+                                     // Add an event listener to update the Quotes input placeholder
+                                     selectElement.addEventListener('change', function () {
                                 const selectedQuality = this.value;
+                                console.log('Selected Quality:', this.value);
                                 selectedQualities[rowIndex] = selectedQuality;
                                 const quoteInput = dataRow.querySelector(`[name="quote_${rowIndex}"]`);
                                 const selectedGrade = data.grades.find(grade => grade.quality === selectedQuality);
+    
+    // Set the placeholder based on the selected grade's minimum and maximum values
+    if (selectedGrade) {
+        quoteInput.placeholder = `Enter a value between ${selectedGrade.minimum} and ${selectedGrade.maximum}`;
+    } else {
+        quoteInput.placeholder = 'Enter a value';
+    }
+});
 
-                                // Set the placeholder based on the selected grade's minimum and maximum values
-                                if (selectedGrade) {
-                                    quoteInput.placeholder = `Enter a value between ${selectedGrade.minimum} and ${selectedGrade.maximum}`;
-                                } else {
-                                    quoteInput.placeholder = 'Enter a value';
-                                }
-                            });
+            cell.appendChild(selectElement);
 
-                            cell.appendChild(selectElement);
+        }else if (key === 'Quote (Rs./UOM)') {
+            // Add input field for 'Quote (Rs./UOM)'
+            const quoteInput = document.createElement('input');
+            quoteInput.type = 'text';
+            quoteInput.name = `quote_${rowIndex}`; 
 
-                        } else if (key === 'Quote (Rs./UOM)') {
-                            // Add input field for 'Quote (Rs./UOM)'
-                            const quoteInput = document.createElement('input');
-                            quoteInput.type = 'text';
-                            quoteInput.name = `quote_${rowIndex}`;
+            // Conditionally set value and placeholder
+            if (value !== null) {
+                
+                quoteInput.placeholder = 'select quality';
+            } else {
+                quoteInput.placeholder = 'select quality';
+            }
+ // Add input event listener for range validation
+          // Add input event listener for range validation
+          quoteInput.addEventListener('input', function() {
+                const enteredValue = parseFloat(this.value);
+                const selectedQuality = dataRow.querySelector(`[name="quality_${rowIndex}"]`).value;
+                const selectedGrade = data.grades.find(grade => grade.quality === selectedQuality);
 
-                            // Conditionally set value and placeholder
-                            if (value !== null) {
-                                quoteInput.placeholder = 'select quality';
-                            } else {
-                                quoteInput.placeholder = 'select quality';
-                            }
+                if (isNaN(enteredValue) || selectedGrade && (enteredValue < selectedGrade.minimum || enteredValue > selectedGrade.maximum)) {
+                    // Display error message if the entered value is not within the range
+                    errorMessageContainer.textContent = 'Price is not in the given range';
+                    errorMessageContainer.style.color = 'red';
+                        errorMessageContainer.style.fontWeight = 'bold';
+                } else {
+                    // Clear error message if the entered value is within the range
+                    errorMessageContainer.textContent = '';
+                }
+            });
 
-                            // Add input event listener for range validation
-                            quoteInput.addEventListener('input', function () {
-                                const enteredValue = parseFloat(this.value);
-                                const selectedQuality = dataRow.querySelector(`[name="quality_${rowIndex}"]`).value;
-                                const selectedGrade = data.grades.find(grade => grade.quality === selectedQuality);
+            cell.appendChild(quoteInput);
 
-                                if (isNaN(enteredValue) || selectedGrade && (enteredValue < selectedGrade.minimum || enteredValue > selectedGrade.maximum)) {
-                                    // Display error message if the entered value is not within the range
-                                    errorMessageContainer.textContent = 'Price is not in the given range';
-                                    errorMessageContainer.style.color = 'red';
-                                    errorMessageContainer.style.fontWeight = 'bold';
-                                } else {
-                                    // Clear error message if the entered value is within the range
-                                    errorMessageContainer.textContent = '';
-                                }
-                            });
+        } else {
+            cell.innerHTML = value;
+        }
+    });
+            
+        
 
-                            cell.appendChild(quoteInput);
-
-                        } else {
-                            cell.innerHTML = value;
-                        }
-                    });
 
                     // Add an additional row for 'Quality' if not present in the data
                     if (!Object.keys(row).includes('Quality')) {
@@ -303,20 +309,22 @@
                         });
 
                         // Add an event listener to update the Quotes input placeholder
-                        selectElement.addEventListener('change', function () {
+                        selectElement.addEventListener('change', function() {
                             const selectedQuality = this.value;
+                            console.log('Selected Quality:', this.value);
                             const quoteInput = dataRow.querySelector(`[name="quote_${rowIndex}"]`);
                             selectedQualities[rowIndex] = selectedQuality;
+                            console.log(selectedQualities)
                             // Find the selected grade in the data.grades array
                             const selectedGrade = data.grades.find(grade => grade.quality === selectedQuality);
 
                             // Set the placeholder based on the selected grade's minimum and maximum values
                             if (selectedGrade) {
-                                quoteInput.placeholder = `min ${selectedGrade.minimum} max ${selectedGrade.maximum}`;
-                            } else {
-                                quoteInput.placeholder = 'Enter a value';
-                            }
-                        });
+                quoteInput.placeholder = `min ${selectedGrade.minimum} max ${selectedGrade.maximum}`;
+            } else {
+                quoteInput.placeholder = 'Enter a value';
+            }
+        });
 
                         qualityCell.appendChild(selectElement);
                     }
@@ -324,36 +332,42 @@
 
                 // Append the table to the resultTable div
                 resultTable.appendChild(table);
+                function getCSRFToken() {
+    const csrfTokenCookie = document.cookie.split('; ').find(cookie => cookie.startsWith('csrftoken='));
+    return csrfTokenCookie ? csrfTokenCookie.split('=')[1] : null;
+}
+              // Add "Submit All" button after the table
+              const submitAllButton = document.createElement('button');
+submitAllButton.id = 'submitAllButton';
+submitAllButton.textContent = 'Submit All';
 
-                // Add "Submit All" button after the table
-                const submitAllButton = document.createElement('button');
-                submitAllButton.id = 'submitAllButton';
-                submitAllButton.textContent = 'Submit All';
+// Insert the button after the resultTable
+resultTable.insertAdjacentElement('afterend', submitAllButton);
 
-                // Insert the button after the resultTable
-                resultTable.insertAdjacentElement('afterend', submitAllButton);
 
-                submitAllButton.addEventListener('click', function () {
-                    // Collect data from all data rows
-                    const submittedData = data.selected_rows.map((row, rowIndex) => {
-                        const rowData = {};
-                        Object.entries(row).forEach(([key, value]) => {
-                            if (key === 'Quality') {
-                                rowData[key] = selectedQualities[rowIndex];
-                            } else if (key === 'Quote (Rs./UOM)') {
-                                const quoteInput = document.querySelector(`[name="quote_${rowIndex}"]`);
-                                rowData[key] = quoteInput ? quoteInput.value : null;
-                            } else {
-                                rowData[key] = value;
-                            }
-                        });
-                        console.log('Row Data:', rowData);
-                        return rowData;
-                    });
+                submitAllButton.addEventListener('click', function() {
+                  // Collect data from all data rows
+                  const submittedData = data.selected_rows.map((row, rowIndex) => {
+        const rowData = {};
+        Object.entries(row).forEach(([key, value]) => {
+            if (key === 'Quality') {
+                // Include the selected quality in the submitted data
+                rowData[key] = document.querySelector(`select[name="quality_${rowIndex}"]`).value;
 
-                    console.log('Submitted Data:', submittedData);
+            } else if (key === 'Quote (Rs./UOM)') {
+                const quoteInput = document.querySelector(`[name="quote_${rowIndex}"]`);
+                rowData[key] = quoteInput ? quoteInput.value : null;
+            } else {
+                rowData[key] = value;
+            }
+        });
+        console.log(rowData);
+        return rowData;
+        console.log('Submitted Data:', submittedData);
 
-                    const csrftoken = getCookie('csrftoken');
+
+    });
+                    const csrftoken = getCookie('csrftoken'); 
                     // Submit data to the server (replace with your actual endpoint)
                     fetch('/submit_all_data/', {
                         method: 'POST',
@@ -363,16 +377,16 @@
                         },
                         body: JSON.stringify(submittedData),
                     })
-                        .then(response => response.json())
-                        .then(result => {
-                            // Handle the response from the server
-                            console.log('Submission result:', result);
-                            // Optionally, you can perform actions based on the server response
-                        })
-                        .catch(error => {
-                            console.error('Error submitting data:', error);
-                            // Handle errors, display messages, etc.
-                        });
+                    .then(response => response.json())
+                    .then(result => {
+                        // Handle the response from the server
+                        console.log('Submission result:', result);
+                        // Optionally, you can perform actions based on the server response
+                    })
+                    .catch(error => {
+                        console.error('Error submitting data:', error);
+                        // Handle errors, display messages, etc.
+                    });
                 });
 
             } else {
@@ -386,20 +400,13 @@
         });
 });
 
-function getCSRFToken() {
-    const csrfTokenCookie = document.cookie.split('; ').find(cookie => cookie.startsWith('csrftoken='));
-    return csrfTokenCookie ? csrfTokenCookie.split('=')[1] : null;
-}
 
+// end of script
 function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
 }
-
-
-// end of script
-
            
   // Event listener for input field changes
   
