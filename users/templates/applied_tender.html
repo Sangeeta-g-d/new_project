@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+.hidden-row {
+    display: none;
+  }
+
+</style>
+<div class="container-fluid">
+
+                    <!-- Page Heading -->
+
+
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">Tender</h1>
+                    </div><br>
+                    <form method="GET" action="">
+                        <label for="date_filter">Filter by Date:</label>
+                        <div class="row gx-3">
+                            <div class="col-md-3">
+                                <!-- Form Group (first name)-->
+                                <div class="mb-3">
+                        <input class="form-control" type="date" id="date_filter" name="date" value="{{ default_date }}" />
+                        </div>
+                        </div>
+                        <div class="col-md-2">
+                        <button type="submit" class="btn btn-success">Apply Filter</button>
+                    </div>
+                               
+                    </form>
+                    <div class="col-md-4">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search...">
+                    </div>
+                </div>  
+                    <script>
+                        // Function to handle table row filtering based on search input
+                        let filteredRows = [];
+                        
+                        let filter = ''; 
+
+function searchTable() {
+    const input = document.getElementById('searchInput');
+    filter = input.value.toUpperCase();
+    console.log(filter)
+    const table = document.getElementById('myTable');
+    const rows = table.getElementsByTagName('tr');
+    filteredRows = [];
+
+    for (let i = 1; i < rows.length; i++) {
+        const cells = rows[i].getElementsByTagName('td');
+        let found = false;
+
+        for (let j = 0; j < cells.length; j++) {
+            const cell = cells[j];
+            if (cell) {
+                const txtValue = cell.textContent || cell.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (found) {
+            rows[i].style.display = '';
+            filteredRows.push(rows[i]);
+        } else {
+            rows[i].style.display = 'none';
+        }
+    }
+}
+
+// Event listener for the search input field
+document.getElementById('searchInput').addEventListener('keyup', searchTable);
+
+                    </script>
+                    
+
+<div class="table-responsive">
+<table class="table align-middle mb-0 bg-white" id="myTable">
+  <thead class="bg-light">
+    <tr>
+      <th>ID</th>
+
+      <th>Commodity</th>
+      <th>Commission Agent</th>
+      <th>Rs</th>
+      <th>Bags</th>
+      <th>Lot ID</th>
+      <th>Lot Code</th>
+      <th>Quality</th>
+      <th>Created On</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+{% for x in obj %}
+    <tr>
+      <td>
+        <div class="d-flex align-items-center">
+          <div class="ms-3">
+            <p class="fw-bold mb-1">{{x.id}}</p>
+          </div>
+        </div>
+      </td>
+
+      <td>{{x.commodity}}</td>
+      <td>{{x.commission_agent}}</td>
+      <td>{{x.rs}}</td>
+      <td>{{x.Bags}}</td>
+      <td>{{x.lot_code}}</td>
+        <td class="lot_id_class">{{x.lot_id}}</td>
+          <td>{{x.quality}}</td>
+          <td>{{x.created_on}}</td>
+            <td class="hidden-row">{{x.operator_id_id}}</td>
+            <td class="hidden-row">{{x.id}}</td>
+            
+      <td>
+        <a href="#" onclick="checkTenderAndUpdate('{{ x.id }}')">
+      <button type="button" class="btn btn-link btn-sm btn-rounded">
+          Update
+      </button></a>
+      <button onclick="submitRow('{{ x.id }}','{{ x.commission_agent }}', '{{ x.lot_code }}'
+      ,'{{ x.rs }}')" class="btn btn-link btn-sm btn-rounded">Submit</button>
+  
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          // Does this cookie string begin with the name we want?
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+          }
+      }
+  }
+  return cookieValue;
+}
+
+function checkTenderAndUpdate(tenderId) {
+  window.location.href = '/update_quote/' + tenderId;
+}
+
+</script>
+      </td>
+    </tr>
+    {% endfor %}
+    
+  
+  </tbody>
+  
+</table>
+<div class="pagination">
+    <span class="step-links">
+        {% if obj.has_previous %}
+        <a href="?page=1" class="btn btn-sm btn-secondary">&laquo; first</a>
+        <a href="?page={{ obj.previous_page_number }}" class="btn btn-sm btn-secondary">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ obj.number }} of {{ obj.paginator.num_pages }}.
+        </span>
+
+        {% if obj.has_next %}
+        <a href="?page={{ obj.next_page_number }}" class="btn btn-sm btn-success">next</a>
+        <a href="?page={{ obj.paginator.num_pages }}" class="btn btn-sm btn-success">last &raquo;</a>
+        {% endif %}
+    </span>&nbsp&nbsp&nbsp&nbsp
+    <button onclick="submitFilteredRows()" class="btn btn-success">Submit All</button>
+    <script>
+        console.log('Script is running');
+
+        function submitFilteredRows() {
+    const data = [];
+    for (let i = 0; i < filteredRows.length; i++) {
+        const cells = filteredRows[i].getElementsByTagName('td');
+        const rowData = {
+            // Collect data from each cell
+            // Example: Change these to match your data structure
+            commodity: cells[1].innerText,
+            commission_agent: cells[2].innerText,
+            rs: cells[3].innerText,
+            bags: cells[4].innerText,
+            lot_id: cells[5].innerText,
+            lot_code: cells[6].innerText,
+            quality: cells[7].innerText,
+            operator_id: cells[9].innerText,
+            tender_id: cells[10].innerText,
+            // Collect other cell data as needed
+        };
+        data.push(rowData);
+    }
+
+    // Now, 'data' contains the filtered rows' information
+    // You can proceed to submit this data to the backend
+    console.log('Filtered data to be submitted:', data);
+    // Add logic to send 'data' to the backend here
+
+    const csrftoken = getCookie('csrftoken'); // Get the CSRF token
+
+    // Send the data to the server
+    fetch('/submit_all_rows/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ rows: data }),
+    })
+    .then(response => response.json())
+.then(data => {
+    console.log('Server response:', data);
+
+    try {
+        if (data && typeof data === 'object') {
+            // Handle the server response accordingly
+            if (data.response_data) {
+                const messages = data.response_data.map(item => item.message);
+                if (messages.includes('Selenium process triggered for new rows.')) {
+                    startSeleniumProcess(csrftoken); // Pass the CSRF token to the Selenium function
+                }
+            }
+
+            // Now 'data' contains the valid server response data
+            console.log('Parsed data:', data);
+            // Handle parsed data here
+        } else {
+            console.error('Received invalid data from the server:', data);
+        }
+    } catch (error) {
+        console.error('Error handling server response:', error);
+    }
+})
+
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+
+function startSeleniumProcess(csrfToken) {
+    console.log(filter);
+    const seleniumEndpoint = '/run_selenium/';
+    const encodedFilter = encodeURIComponent(filter);
+
+    const url = `${seleniumEndpoint}?filter=${encodedFilter}`;
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ /* Add any data to be sent to the Django view */ })
+    })
+    .then(response => response.json())
+    .then(responseData => {
+        console.log('Response Data:', responseData);  // Log the entire response data for inspection
+
+        if (responseData && responseData.data) {
+            const data = JSON.parse(responseData.data);
+
+            // Process the array of objects
+            let alertMessage = '';
+            data.forEach(item => {
+                alertMessage += `Lot Code: ${item.Lot_Code}, Message: ${item.Message}\n`;
+            });
+
+            // Display alert with the extracted data
+            alert(alertMessage);
+        } else {
+            console.error('Error: responseData or responseData.data is undefined');
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching data:', error);
+    });
+}
+
+
+function submitRow(rowId, commission_agent, lot_ID,rs) {
+    console.log(rowId)
+    console.log(commission_agent)
+    console.log(rs)
+    console.log(lot_ID)
+    const csrftoken = getCookie('csrftoken'); // Get the CSRF token
+
+    const rowData = {
+        row_id: rowId,
+        commission_agent: commission_agent,
+        rs : rs,
+        lot_id : lot_ID 
+        // Include other necessary data specific to this row for submission
+    };
+    console.log(rowData)
+
+    // Send the data for the specific row to the server
+    fetch('/run_selenium_row/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ row_data: rowData }),
+    })
+    .then(response => response.json())
+    .then(responseData => {
+        // Parse the data string within the response object
+        const data = JSON.parse(responseData.data);
+        console.log(data)
+
+        // Process the array of objects
+        let alertMessage = '';
+        data.forEach(item => {
+            alertMessage += `Lot Code: ${item.Lot_Code}, Message: ${item.Message}\n`;
+        });
+
+        // Display alert with the extracted data
+        alert(alertMessage);
+    })
+    
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+
+
+
+function getCookie(name) {
+    const cookieString = document.cookie;
+    const cookies = cookieString.split(';');
+
+    for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.startsWith(name + '=')) {
+            return decodeURIComponent(cookie.substring(name.length + 1));
+        }
+    }
+    return null;
+}
+
+</script>
+        
+</div>
+</div>
+</div>
+</div>
+{% endblock %}

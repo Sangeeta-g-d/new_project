@@ -1,0 +1,407 @@
+{% extends 'base1.html' %}
+{% block content %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<div class="container-fluid">
+
+                    <!-- Page Heading -->
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
+                    </div>
+
+
+
+                    <!-- options.html -->
+                    <!-- options.html -->
+                    <form id="optionsForm" method="post">
+      {% csrf_token %}
+      <div class="row gx-3">
+          <div class="col-md-6">
+              <!-- Form Group (first name)-->
+              <div class="mb-3">
+                  <label class="small mb-1" for="inputFirstName">Select Commodity</label>
+                  <select required class="form-control" name="commodity" id="commodity">
+                      <option value="" selected disabled>Select Commodity</option>
+                      {% for option in batch_options %}
+                          <option value="{{ option }}">{{ option }}</option>
+                      {% endfor %}
+                  </select>
+              </div>
+          </div>
+          <div class="col-md-6" id="commissionAgentField" style="display: none;">
+            <!-- Form Group (last name)-->
+            <div class="mb-3">
+                <label class="small mb-1" for="inputLastName">Select commission agent</label>
+                <select required class="form-control" name="commission_agent" id="commission_agent">
+                    <option value="" selected disabled>Select Commission Agent</option>
+                </select>
+            </div>
+        </div>
+          
+      </div>
+      <div id="errorMessageContainer"></div>
+      <div class="table-responsive">
+      <table class="table align-middle mb-0 bg-white"  id="resultTable"></table>
+    </div>
+
+      <div class="row gx-3">
+        <div class="col-md-6" id="lotIdField" style="display: none;">
+            <!-- Form Group (last name)-->
+           
+        </div>
+          <div class="col-md-6" id="Bags" style="display: none;">
+              <!-- Form Group (last name)-->
+              <div class="mb-3">
+                  <label class="small mb-1" for="inputLastName">Bags</label>
+                  <input required type="text" name="bags" class="form-control" id="bags" value="">
+              </div>
+          </div>
+      </div>
+      <div class="row gx-3">
+          <div class="col-md-6" id="lotCode" style="display: none;">
+              <!-- Form Group (first name)-->
+              <div class="mb-3">
+                  <label class="small mb-1" for="inputFirstName">Lot Code</label>
+                <input required type="text" name="lot_code" class="form-control"id="lot_code" value="">
+              </div>
+          </div>
+          <div class="col-md-6" id="Quality" style="display: none;">
+              <!-- Form Group (first name)
+              <div class="mb-3">
+                  <label class="small mb-1" for="inputFirstName">Quality</label>
+                  <select required class="form-control" name="quality" id="inputQuality">
+           <option value="">Select Quality</option>
+           {% for quality in unique_qualities %}
+           <option value="{{ quality }}">{{ quality }}</option>
+           {% endfor %}
+       </select>
+              </div>
+          </div>-->
+
+      </div>
+        <div class="row gx-3">
+      <div class="col-md-6" id="Quote" style="display: none;">
+          <!-- Form Group (first name)-->
+          <div class="mb-3">
+              <label class="small mb-1" for="inputFirstName">Quote (Rs.)</label>
+            <input required type="text"id="inputQuote" name="quote" placeholder="Select a grade first" class="form-control" value="">
+          </div>
+      </div>
+      </div>
+     
+</form>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const commoditySelect = document.getElementById('commodity');
+        const commissionAgentField = document.getElementById('commissionAgentField');
+        const commissionAgentSelect = document.getElementById('commission_agent');
+        const lotIdField = document.getElementById('lotIdField');
+        const lotIdSelect = document.getElementById('lot_id');
+         // Add references to other form elements
+        const LotBags = document.getElementById('Bags');
+
+        const lotCode = document.getElementById('lotCode');
+        const Quality = document.getElementById('Quality');
+        const QualitySelected = document.getElementById('inputQuality');
+        const Quote = document.getElementById('Quote');
+        
+        // Add references to other form elements
+
+        // Hide commission agent and lot id fields initially
+        commissionAgentField.style.display = 'none';
+        lotIdField.style.display = 'none';
+
+        // Event listener for the commodity select
+        commoditySelect.addEventListener('change', function() {
+            if (this.value !== '') {
+                commissionAgentField.style.display = 'block';
+                lotIdField.style.display = 'none';
+
+                // Reset values of other fields if needed
+                bagsInput.value = ''; // Reset bags input value
+                lotCodeInput.value = ''; // Reset lot code input value
+                inputQualitySelect.selectedIndex = 0; // Reset quality select
+                inputQuoteInput.value = ''; // Reset quote input value
+                // Reset other fields as needed
+            } else {
+                commissionAgentField.style.display = 'none';
+                lotIdField.style.display = 'none';
+
+                // Reset values of other fields if needed
+                bagsInput.value = '';
+                lotCodeInput.value = '';
+                inputQualitySelect.selectedIndex = 0;
+                inputQuoteInput.value = '';
+                // Reset other fields as needed
+            }
+        });
+
+       
+    });
+</script>
+
+      </div>
+
+
+
+
+
+
+
+
+
+
+  <script>
+      document.getElementById('commodity').addEventListener('change', function() {
+          const selectedCommodity = this.value;
+          fetch(`/get_commission_agent/?commodity=${selectedCommodity}`)
+              .then(response => response.json())
+              .then(data => {
+                  const commodityDropdown = document.getElementById('commission_agent');
+                  commodityDropdown.innerHTML = '<option value="" selected disabled>Select Commission Agent</option>';
+                  data.forEach(option => {
+                      const newOption = document.createElement('option');
+                      newOption.value = option;
+                      newOption.text = option;
+                      commodityDropdown.appendChild(newOption);
+                  });
+              });
+      });
+
+
+      //table script
+     
+      document.getElementById('commission_agent').addEventListener('change', function () {
+    const selectedCommission = this.value;
+    fetch(`/get_lot_id/?commission_agent=${selectedCommission}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log(data); // Log the response to the console
+
+            const resultTable = document.getElementById('resultTable');
+            resultTable.innerHTML = ''; // Clear previous results
+
+            if (data.selected_rows && data.selected_rows.length > 0) {
+                // Create table element with classes
+                const table = document.createElement('table');
+                table.classList.add('table', 'align-middle', 'mb-0', 'bg-white');
+
+                // Create table header
+                const headerRow = table.insertRow();
+                Object.keys(data.selected_rows[0]).forEach((key, index) => {
+                    const headerCell = headerRow.insertCell();
+                    headerCell.innerHTML = key;
+                });
+
+                // Check if 'Quality' is present, if not, add it to the header
+                if (!Object.keys(data.selected_rows[0]).includes('Quality')) {
+                    const qualityHeaderCell = headerRow.insertCell();
+                    qualityHeaderCell.innerHTML = 'Quality';
+                }
+
+                // Check if 'Quote (Rs./UOM)' is present, if not, add it to the header
+                if (!Object.keys(data.selected_rows[0]).includes('Quote (Rs./UOM)')) {
+                    const quoteHeaderCell = headerRow.insertCell();
+                    quoteHeaderCell.innerHTML = 'Quote (Rs./UOM)';
+                }
+
+                let errorMessageContainer = document.getElementById('errorMessageContainer');
+                if (!errorMessageContainer) {
+                    errorMessageContainer = document.createElement('div');
+                    errorMessageContainer.id = 'errorMessageContainer';
+                    document.body.insertBefore(errorMessageContainer, document.getElementById('resultTable'));
+                }
+
+                // Create data rows
+                const selectedQualities = new Array();
+                data.selected_rows.forEach((row, rowIndex) => {
+                    const dataRow = table.insertRow();
+                    selectedQualities[rowIndex] = row.Quality;
+
+                    Object.entries(row).forEach(([key, value]) => {
+                        const cell = dataRow.insertCell();
+
+                        if (key === 'Quality') {
+                            // Use dynamically fetched options for 'Quality'
+                            const selectElement = document.createElement('select');
+                            selectElement.name = `quality_${rowIndex}`; // Unique name for each row
+
+                            data.quality_options.forEach(option => {
+                                const optionElement = document.createElement('option');
+                                optionElement.value = option.trim();
+                                optionElement.text = option.trim();
+                                selectElement.appendChild(optionElement);
+                            });
+
+                            // Set the selected option based on the stored selected quality
+                            selectElement.value = selectedQualities[rowIndex];
+
+                            // Add an event listener to update the Quotes input placeholder
+                            selectElement.addEventListener('change', function () {
+                                const selectedQuality = this.value;
+                                selectedQualities[rowIndex] = selectedQuality;
+                                const quoteInput = dataRow.querySelector(`[name="quote_${rowIndex}"]`);
+                                const selectedGrade = data.grades.find(grade => grade.quality === selectedQuality);
+
+                                // Set the placeholder based on the selected grade's minimum and maximum values
+                                if (selectedGrade) {
+                                    quoteInput.placeholder = `Enter a value between ${selectedGrade.minimum} and ${selectedGrade.maximum}`;
+                                } else {
+                                    quoteInput.placeholder = 'Enter a value';
+                                }
+                            });
+
+                            cell.appendChild(selectElement);
+
+                        } else if (key === 'Quote (Rs./UOM)') {
+                            // Add input field for 'Quote (Rs./UOM)'
+                            const quoteInput = document.createElement('input');
+                            quoteInput.type = 'text';
+                            quoteInput.name = `quote_${rowIndex}`;
+
+                            // Conditionally set value and placeholder
+                            if (value !== null) {
+                                quoteInput.placeholder = 'select quality';
+                            } else {
+                                quoteInput.placeholder = 'select quality';
+                            }
+
+                            // Add input event listener for range validation
+                            quoteInput.addEventListener('input', function () {
+                                const enteredValue = parseFloat(this.value);
+                                const selectedQuality = dataRow.querySelector(`[name="quality_${rowIndex}"]`).value;
+                                const selectedGrade = data.grades.find(grade => grade.quality === selectedQuality);
+
+                                if (isNaN(enteredValue) || selectedGrade && (enteredValue < selectedGrade.minimum || enteredValue > selectedGrade.maximum)) {
+                                    // Display error message if the entered value is not within the range
+                                    errorMessageContainer.textContent = 'Price is not in the given range';
+                                    errorMessageContainer.style.color = 'red';
+                                    errorMessageContainer.style.fontWeight = 'bold';
+                                } else {
+                                    // Clear error message if the entered value is within the range
+                                    errorMessageContainer.textContent = '';
+                                }
+                            });
+
+                            cell.appendChild(quoteInput);
+
+                        } else {
+                            cell.innerHTML = value;
+                        }
+                    });
+
+                    // Add an additional row for 'Quality' if not present in the data
+                    if (!Object.keys(row).includes('Quality')) {
+                        const qualityCell = dataRow.insertCell();
+                        const selectElement = document.createElement('select');
+                        selectElement.name = `quality_${rowIndex}`; // Unique name for each row
+
+                        data.quality_options.forEach(option => {
+                            const optionElement = document.createElement('option');
+                            optionElement.value = option.trim();
+                            optionElement.text = option.trim();
+                            selectElement.appendChild(optionElement);
+                        });
+
+                        // Add an event listener to update the Quotes input placeholder
+                        selectElement.addEventListener('change', function () {
+                            const selectedQuality = this.value;
+                            const quoteInput = dataRow.querySelector(`[name="quote_${rowIndex}"]`);
+                            selectedQualities[rowIndex] = selectedQuality;
+                            // Find the selected grade in the data.grades array
+                            const selectedGrade = data.grades.find(grade => grade.quality === selectedQuality);
+
+                            // Set the placeholder based on the selected grade's minimum and maximum values
+                            if (selectedGrade) {
+                                quoteInput.placeholder = `min ${selectedGrade.minimum} max ${selectedGrade.maximum}`;
+                            } else {
+                                quoteInput.placeholder = 'Enter a value';
+                            }
+                        });
+
+                        qualityCell.appendChild(selectElement);
+                    }
+                });
+
+                // Append the table to the resultTable div
+                resultTable.appendChild(table);
+
+                // Add "Submit All" button after the table
+                const submitAllButton = document.createElement('button');
+                submitAllButton.id = 'submitAllButton';
+                submitAllButton.textContent = 'Submit All';
+
+                // Insert the button after the resultTable
+                resultTable.insertAdjacentElement('afterend', submitAllButton);
+
+                submitAllButton.addEventListener('click', function () {
+                    // Collect data from all data rows
+                    const submittedData = data.selected_rows.map((row, rowIndex) => {
+                        const rowData = {};
+                        Object.entries(row).forEach(([key, value]) => {
+                            if (key === 'Quality') {
+                                rowData[key] = selectedQualities[rowIndex];
+                            } else if (key === 'Quote (Rs./UOM)') {
+                                const quoteInput = document.querySelector(`[name="quote_${rowIndex}"]`);
+                                rowData[key] = quoteInput ? quoteInput.value : null;
+                            } else {
+                                rowData[key] = value;
+                            }
+                        });
+                        console.log('Row Data:', rowData);
+                        return rowData;
+                    });
+
+                    console.log('Submitted Data:', submittedData);
+
+                    const csrftoken = getCookie('csrftoken');
+                    // Submit data to the server (replace with your actual endpoint)
+                    fetch('/submit_all_data/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCSRFToken(),
+                        },
+                        body: JSON.stringify(submittedData),
+                    })
+                        .then(response => response.json())
+                        .then(result => {
+                            // Handle the response from the server
+                            console.log('Submission result:', result);
+                            // Optionally, you can perform actions based on the server response
+                        })
+                        .catch(error => {
+                            console.error('Error submitting data:', error);
+                            // Handle errors, display messages, etc.
+                        });
+                });
+
+            } else {
+                // Display a message if there are no rows
+                resultTable.innerHTML = '<p>No rows found</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+            resultTable.innerHTML = `<p>Error fetching data: ${error.message}</p>`;
+        });
+});
+
+function getCSRFToken() {
+    const csrfTokenCookie = document.cookie.split('; ').find(cookie => cookie.startsWith('csrftoken='));
+    return csrfTokenCookie ? csrfTokenCookie.split('=')[1] : null;
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+
+// end of script
+
+           
+  // Event listener for input field changes
+  
+  </script>
+{% endblock %}

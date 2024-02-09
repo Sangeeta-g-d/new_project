@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid">
+
+                  <!-- Page Heading -->
+                  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                      <h1 class="h3 mb-0 text-gray-800">Update Tender</h1>
+                  </div>
+                  <form method="post">
+                    {% csrf_token %}
+                      <!-- Form Row-->
+                      <div class="row gx-3">
+                          <div class="col-md-6">
+                              <!-- Form Group (first name)-->
+                              <div class="mb-3">
+                                  <label class="small mb-1" for="inputFirstName">Commodity</label>
+                                  <input class="form-control" id="inputFirstName" type="text"
+                                   value="{{obj.commodity}}" name="commodity" readonly>
+                              </div>
+                          </div>
+                          <div class="col-md-6">
+                              <!-- Form Group (last name)-->
+                              <div class="mb-3">
+                                  <label class="small mb-1" for="inputLastName">Lot ID</label>
+                                  <input class="form-control" id="inputLastName" type="text"
+                                 value="{{obj.lot_id}}" name=lot_id readonly>
+                              </div>
+                          </div>
+                      </div>
+                      <div class="row gx-3">
+                          <div class="col-md-6">
+                              <!-- Form Group (first name)-->
+                              <div class="mb-3">
+                                  <label class="small mb-1" for="inputFirstName">Commission Agent</label>
+                                  <input class="form-control" id="inputFirstName" type="text"
+                                 value="{{obj.commission_agent}}" name="commission_agent" readonly>
+                              </div>
+                          </div>
+                          <div class="col-md-6">
+                              <!-- Form Group (last name)-->
+                              <div class="mb-3">
+                                  <label class="small mb-1" for="inputLastName">Bags</label>
+                                  <input class="form-control" id="inputLastName" readonly type="text"
+                                  name="bags" value="{{obj.Bags}}">
+                              </div>
+                          </div>
+                      </div>
+                      <div class="row gx-3">
+                          <div class="col-md-6">
+                              <!-- Form Group (first name)-->
+                              <div class="mb-3">
+                                  <label class="small mb-1" for="inputFirstName">Lot Code</label>
+                                  <input class="form-control" id="inputFirstName" type="text"
+                                 value="{{obj.lot_code}}" name="lot_code" readonly>
+                              </div>
+                          </div>
+                          <div class="col-md-6">
+                              <!-- Form Group (last name)-->
+                              <div class="mb-3">
+                                  <label class="small mb-1" for="inputQuality">Quality</label>
+                                  <input class="form-control" id="inputQuality" readonly type="text"
+                                  name="quality" value="{{obj.quality}}">
+                              </div>
+                          </div>
+                      </div>
+                      <div class="row gx-3">
+                          <div class="col-md-6">
+                              <!-- Form Group (first name)-->
+                              <div class="mb-3">
+                                  <label class="small mb-1" for="inputFirstName" id="rsRangeLabel">Rs/-</label>
+                                  <input class="form-control" id="inputFirstName" type="number"
+                                  name="rs" value="{{obj.rs}}">
+                              </div>
+                          </div>
+
+                      </div>
+                      <div id="error-message" style="color: red;"></div>
+                      <input type="text" name="operator_id" hidden value="{{obj.operator_id_id}}">
+                      <input type="text" name="tender_id" hidden value="{{obj.id}}">
+                      <!-- Form Group (create account submit)-->
+                      <button type="submit"id="submitButton" class="btn btn-success">Update</button>
+                  </form>
+
+</div>
+<script type="text/javascript">
+
+    // Fetch quality ranges from Django backend
+    async function fetchQualityRanges() {
+        try {
+            const response = await fetch('/get_quality_ranges/'); // Replace with your endpoint URL
+            const data = await response.json();
+            return data.quality_ranges;
+        } catch (error) {
+            console.error('Error fetching quality ranges:', error);
+            return [];
+        }
+    }
+
+    // Get the input elements and other necessary DOM elements
+    const qualityInput = document.getElementById('inputQuality');
+    const rsInput = document.querySelector('input[name="rs"]');
+    const errorMessage = document.getElementById('error-message');
+    const submitButton = document.getElementById('submitButton');
+    const rsRangeLabel = document.getElementById('rsRangeLabel');
+
+    // Function to display the range for the selected quality type
+    async function displayRange() {
+        const quality = qualityInput.value.toLowerCase();
+        const qualityRanges = await fetchQualityRanges();
+
+        // Find the selected quality range from the fetched data
+        const selectedRange = qualityRanges.find(range => range.quality.toLowerCase() === quality);
+
+        if (selectedRange) {
+            const { minimum, maximum } = selectedRange;
+            rsRangeLabel.textContent = `Rs Range: ${minimum} - ${maximum}`;
+        }
+    }
+
+    // Function to validate and update the data
+    function validateAndUpdate() {
+        const quality = qualityInput.value.toLowerCase();
+        const rs = parseFloat(rsInput.value);
+
+        // Fetch quality ranges from backend
+        fetchQualityRanges().then(qualityRanges => {
+            const selectedRange = qualityRanges.find(range => range.quality.toLowerCase() === quality);
+
+            if (selectedRange) {
+                const { minimum, maximum } = selectedRange;
+
+                if (rs >= minimum && rs <= maximum) {
+                    errorMessage.textContent = ''; // Clear error message
+                    submitButton.disabled = false; // Enable submit button
+                } else {
+                    errorMessage.textContent = 'Entered value is not within the valid range for this quality type.';
+                    submitButton.disabled = true; // Disable submit button
+                }
+            } else {
+                errorMessage.textContent = 'Invalid quality type.';
+                submitButton.disabled = true; // Disable submit button
+            }
+        }).catch(error => {
+            console.error('Error fetching quality ranges:', error);
+            errorMessage.textContent = 'Error fetching quality ranges.';
+            submitButton.disabled = true; // Disable submit button
+        });
+    }
+
+    // Attach event listeners
+    rsInput.addEventListener('input', validateAndUpdate);
+    qualityInput.addEventListener('change', displayRange); // Trigger on quality change
+    displayRange(); // Display range on initial load
+</script>
+
+
+{% endblock %}

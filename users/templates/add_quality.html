@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid">
+
+                  <!-- Page Heading -->
+                  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                      <h1 class="h3 mb-0 text-gray-800">Add New Quality</h1>
+                  </div>
+
+                  <form method="post">
+                    {% csrf_token %}
+                      <!-- Form Row-->
+                      <div class="row gx-3">
+                          <div class="col-md-6">
+                              <!-- Form Group (first name)-->
+                              <div class="mb-3">
+                                  <label class="small mb-1" for="inputFirstName">Quality</label>
+                                  <input class="form-control" required id="inputFirstName" type="text"
+                                  name="quality">
+                              </div>
+                          </div>
+                          <div class="col-md-6">
+                              <!-- Form Group (last name)-->
+                              <div class="mb-3">
+                                  <label class="small mb-1" for="inputLastName">Minimum Value</label>
+                                  <input class="form-control" required id="inputLastName" type="number"
+                                  name="min">
+                              </div>
+                          </div>
+                      </div>
+                      <div class="row gx-3">
+                          <div class="col-md-6">
+                              <!-- Form Group (first name)-->
+                              <div class="mb-3">
+                                  <label class="small mb-1" for="inputFirstName">Maximum Value</label>
+                                  <input class="form-control" required id="inputFirstName" type="number"
+                                  name="max">
+                              </div>
+                          </div>
+
+                      </div>
+
+                      <!-- Form Group (create account submit)-->
+                      <button type="submit" class="btn btn-info ">Add</button>
+                  </form>
+
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style media="screen">
+  .profile-picture {
+  width: 150px; /* Set the width and height to the desired size */
+  height: 150px;
+  border-radius: 50%; /* Make it a circle by setting border-radius to 50% */
+  overflow: hidden; /* Hide anything outside the circle */
+}
+
+.profile-picture img {
+  width: 100%; /* Make the image fill the container */
+  height: auto; /* Ensure the image retains its aspect ratio */
+  display: block; /* Remove any default inline spacing */
+}
+
+</style>
+<div class="container-fluid">
+      <div class="d-sm-flex align-items-center justify-content-between mb-4">
+          <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
+      </div>
+      <div class="container">
+    <div class="row">
+      <div class="col-md-3">
+        <div class="profile-picture">
+          <img src="/media/assets/img/undraw_profile.svg" alt="Profile Picture">
+        </div>
+      </div>      <div class="col-md-8">
+        <div class="card shadow mb-4">
+          <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">{{user}} {{last}}</h6>
+          </div>
+          <div class="card-body">
+            <p>Email : {{email}} <br>Contact Number : {{pno}}<br>Aadhar Number : {{ad}}<br>
+            PAN Number : {{pan}}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

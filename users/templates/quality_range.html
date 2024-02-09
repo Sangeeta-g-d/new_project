@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid">
+
+                    <!-- Page Heading -->
+
+
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">Quality Range</h1>
+                    </div><br>
+                    <div style="margin-bottom:20px;">
+                      <a href="/add_quality">  <button type="submit" class="btn btn-success ">+ Add New Quality Grade</button> </a><br>
+                    </div>
+
+<div class="table-responsive">
+
+</div>
+<div class="table-responsive">
+<table class="table align-middle mb-0 bg-white" id="myTable">
+  <thead class="bg-light">
+    <tr>
+      <th>Quality</th>
+      <th>Minimum Value</th>
+      <th>Maximum Value</th>
+      <th>Action</th>
+
+    </tr>
+  </thead>
+  <tbody>
+{% for x in obj %}
+    <tr>
+      <td>{{x.quality}}</td>
+      <td>{{x.minimum}}</td>
+      <td>{{x.maximum}}</td>
+      <td>  <a href="/update_quality/{{x.id}}">
+      <button type="button" class="btn btn-link btn-sm btn-rounded">
+          Update
+      </button>
+  </a></td>
+
+    </tr>
+    {% endfor %}
+
+
+  </tbody>
+</table>
+</div>
+</div>
+
+
+{% endblock %}
