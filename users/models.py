@@ -10,6 +10,8 @@ class NewUser(AbstractUser):
     adhar_no = models.CharField(max_length=30)
     pan_no = models.CharField(max_length=40, null=True)
 
+class UploadFile(models.Model):
+    excel = models.FileField(upload_to='uploads/')
 
 class APMCTender(models.Model):
     commodity = models.CharField(max_length=300)
@@ -18,7 +20,7 @@ class APMCTender(models.Model):
     Bags = models.IntegerField()
     lot_code = models.CharField(max_length=300)
     quality = models.CharField(max_length=200)
-    rs = models.IntegerField()
+    rs = models.FloatField()
     operator_id = models.ForeignKey(NewUser, on_delete=models.CASCADE, default=4)
     created_on = models.DateField(default=timezone.now)
 
@@ -30,7 +32,7 @@ class APMCETender(models.Model):
     Bags = models.IntegerField()
     lot_code = models.CharField(max_length=300)
     quality = models.CharField(max_length=200)
-    rs = models.IntegerField()
+    rs = models.FloatField()
     operator_id = models.ForeignKey(NewUser, on_delete=models.CASCADE, default=4)
     created_on = models.DateField(default=timezone.now)
 

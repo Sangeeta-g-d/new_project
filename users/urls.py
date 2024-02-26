@@ -33,10 +33,11 @@ urlpatterns = [
      path('submit_row/<int:row_id>/', views.submit_row, name='submit_row'),
      path('submitted_tender', views.submitted_tender, name='submitted_tender'),
      path('run_selenium/',views.run_selenium,name="run_selenium"),
-     path('run_selenium_row/',views.run_selenium_row,name="run_selenium_row"),
+     #path('run_selenium_row/',views.run_selenium_row,name="run_selenium_row"),
      #path('check_tender_exists/', views.check_tender_exists, name='check_tender_exists'),
      path('submit_all_rows/',views.submit_all_rows, name='submit_all_rows'),
-     path('submit_all_data/',views.submit_all_data, name='submit_all_data')
+     path('submit_all_data/',views.submit_all_data, name='submit_all_data'),
+     path('update_apmc_tender_rs/<int:apmc_tender_id>/', views.update_apmc_tender_rs, name='update_apmc_tender_rs'),
 
 
      ]

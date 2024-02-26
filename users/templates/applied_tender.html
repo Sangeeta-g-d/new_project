@@ -6,6 +6,11 @@
   }
 
 </style>
+<!-- Add this in the head section of your HTML file -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<!-- Include SweetAlert library -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+
 <div class="container-fluid">
 
                     <!-- Page Heading -->
@@ -94,7 +99,7 @@ document.getElementById('searchInput').addEventListener('keyup', searchTable);
     </tr>
   </thead>
   <tbody>
-{% for x in obj %}
+{% for x in obj_list %}
     <tr>
       <td>
         <div class="d-flex align-items-center">
@@ -106,7 +111,7 @@ document.getElementById('searchInput').addEventListener('keyup', searchTable);
 
       <td>{{x.commodity}}</td>
       <td>{{x.commission_agent}}</td>
-      <td>{{x.rs}}</td>
+      <td><input id="rsInput"  type="text" value="{{x.rs}}"></td>
       <td>{{x.Bags}}</td>
       <td>{{x.lot_code}}</td>
         <td class="lot_id_class">{{x.lot_id}}</td>
@@ -116,13 +121,11 @@ document.getElementById('searchInput').addEventListener('keyup', searchTable);
             <td class="hidden-row">{{x.id}}</td>
             
       <td>
-        <a href="#" onclick="checkTenderAndUpdate('{{ x.id }}')">
-      <button type="button" class="btn btn-link btn-sm btn-rounded">
-          Update
-      </button></a>
-      <button onclick="submitRow('{{ x.id }}','{{ x.commission_agent }}', '{{ x.lot_code }}'
-      ,'{{ x.rs }}')" class="btn btn-link btn-sm btn-rounded">Submit</button>
-  
+       
+        <button type="button" class="btn btn-link btn-sm btn-rounded update-button">
+            Update
+        </button>
+      
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
   function getCookie(name) {
@@ -146,6 +149,10 @@ function checkTenderAndUpdate(tenderId) {
 }
 
 </script>
+
+
+<!-- Add this script after including jQuery -->
+
       </td>
     </tr>
     {% endfor %}
@@ -154,6 +161,59 @@ function checkTenderAndUpdate(tenderId) {
   </tbody>
   
 </table>
+<script>
+    $(document).ready(function() {
+        // Get the CSRF token from the cookie
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    
+        // Event listener for "Update" button click
+        $(".update-button").on("click", function() {
+            // Get the APMCTender ID from the hidden row
+            var apmcTenderId = $(this).closest("tr").find(".hidden-row:eq(1)").text();
+            console.log(apmcTenderId)
+    
+            // Get the new rs value from the input field in the same row
+            var newRsValue = $(this).closest("tr").find("#rsInput").val();
+    
+            // Get the CSRF token
+            var csrfToken = getCookie("csrftoken");
+    
+           // Make an AJAX request to update the rs value in the database
+    $.ajax({
+        url: "/update_apmc_tender_rs/" + apmcTenderId + "/",
+        type: "POST",
+        headers: {
+            "X-CSRFToken": csrfToken
+        },
+        data: {
+            rs: newRsValue,
+        },
+        success: function(response) {
+            // Handle success response if needed
+            alert("RS value updated successfully!");
+        },
+        error: function(error) {
+            // Handle error if needed
+            console.error("Error updating RS value:", error);
+            alert("Error updating RS value")
+        }
+    });
+});
+    });
+    </script>
 <div class="pagination">
     <span class="step-links">
         {% if obj.has_previous %}
@@ -177,13 +237,16 @@ function checkTenderAndUpdate(tenderId) {
         function submitFilteredRows() {
     const data = [];
     for (let i = 0; i < filteredRows.length; i++) {
+        
         const cells = filteredRows[i].getElementsByTagName('td');
+        // Use querySelector directly to select the 'rsInput' field
+        const rsInput = cells[3].querySelector('#rsInput');
         const rowData = {
             // Collect data from each cell
             // Example: Change these to match your data structure
             commodity: cells[1].innerText,
             commission_agent: cells[2].innerText,
-            rs: cells[3].innerText,
+            rs: rsInput ? rsInput.value : 'default_value',
             bags: cells[4].innerText,
             lot_id: cells[5].innerText,
             lot_code: cells[6].innerText,
@@ -192,6 +255,7 @@ function checkTenderAndUpdate(tenderId) {
             tender_id: cells[10].innerText,
             // Collect other cell data as needed
         };
+        console.log(rowData)
         data.push(rowData);
     }
 

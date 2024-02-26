@@ -1,7 +1,7 @@
 from django.shortcuts import render,redirect
 from django.http import HttpResponse,HttpResponseRedirect,HttpResponseForbidden,HttpResponseBadRequest
 from django.template import loader
-from .models import NewUser,PasswordReset, APMCTender,APMCETender, Grades
+from .models import NewUser,PasswordReset, APMCTender,APMCETender, Grades, UploadFile
 from django.contrib.auth import authenticate,login,logout
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
@@ -21,9 +21,12 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 import time
 from datetime import datetime
-
+from django.conf import settings
+import os
+import requests
+import re
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-
+from django.core.files.base import ContentFile
 # Create your views here
 
 # yourapp/views.py
@@ -50,41 +53,23 @@ def run_selenium(request):
     try:
         filter_value = request.GET.get('filter', '')
         print(filter_value)
-        '''if request.method == 'POST':
-            # Retrieve and parse the JSON data from the request body
-            data = json.loads(request.body)
-            row_data = data.get('row_data')  # Access the 'row_data' object
-            
-            # Access specific fields from the received data
-            row_id = row_data.get('row_id')
-            commission_agent = row_data.get('commission_agent')
-            rs = row_data.get('rs')
-            lot_id = row_data.get('lot_id')
-
-            # Process the received data
-            print("Row ID:", row_id)
-            print("Commission Agent:", commission_agent)
-            print("RS:", rs)'''
+       
         # Fetch data from APMCETender model
         today_date = timezone.localdate()
         recent_tenders = APMCETender.objects.filter(created_on=today_date)
         recent_tenders_list = list(recent_tenders)
-        print("@@@2",recent_tenders)
 
         # Replace these with your actual credentials
-        username = "hublSkba"
-        password = "Skb@12345"
+        username = "HUBLSSE2"
+        password = "Sse@1234"
 
         # Specify the path to your webdriver (download the appropriate driver for your browser)
-        # For example, if using Chrome, download the ChromeDriver: https://sites.google.com/chromium.org/driver/
-        # s = ChromeService('C:\chromedriver-win64\chromedriver-win64\chromedriver.exe')
-        s = ChromeService('C:\chromedriver-win64 (1)\chromedriver-win64\chromedriver.exe')
-        
+        chrome_driver_path = 'C:\chromedriver-win64 (1)\chromedriver-win64\chromedriver.exe'
 
-        
         chrome_options = Options()
         s = ChromeService(executable_path=chrome_driver_path, chrome_options=chrome_options)
         web = webdriver.Chrome(service=s)
+
         # Navigate to the login page
         web.get("https://ka54.remsl.in/UMPeMandi/")
         time.sleep(1)
@@ -99,8 +84,6 @@ def run_selenium(request):
         password_field.send_keys(password)
         submit_button.click()
 
-       
-
         # Wait for a few seconds to observe the result (you can replace this with proper waiting mechanisms)
         web.implicitly_wait(5)
         time.sleep(15)
@@ -109,103 +92,97 @@ def run_selenium(request):
         web.get("https://ka54.remsl.in/UMPeMandi/views/index.html#/batchEtender?moduleId=200023")
         time.sleep(10)
 
-        batch_dropdown = Select(web.find_element(By.NAME, 'batchId'))  # Replace with the actual name or identifier of the batch dropdown
-        batch_dropdown.select_by_visible_text("DRY CHILLY")  # Replace with the actual name of the batch from your data
+        # Replace this with the actual name or identifier of the div containing the page information
+        batch_dropdown = Select(web.find_element(By.NAME, 'batchId'))
+        batch_dropdown.select_by_visible_text("DRY CHILLY")
         time.sleep(5)
 
-        batch_dropdown = Select(web.find_element(By.NAME, 'batchId'))  # Replace with the actual name or identifier of the batch dropdown
-        batch_dropdown.select_by_visible_text("DRY CHILLY")  # Replace with the actual name of the batch from your data
-        time.sleep(5)
-        
-        
         search_bar = web.find_element(By.ID, 'commissionAgent')
         search_term = filter_value
 
         time.sleep(2)
 
-# Type the search term into the search bar
+        # Type the search term into the search bar
         search_bar.send_keys(search_term)
         time.sleep(5)
         print("^^^^^^^^^^^^^")
 
-# Define the ID of the dropdown UL
-       # Find all elements with class 'ui-menu-item'
+        # Define the ID of the dropdown UL
         wait = WebDriverWait(web, 15)
 
         try:
-    # Define the XPath for the desired option
+            # Define the XPath for the desired option
             element_xpath = f"//div[contains(@class, 'ui-menu-item-wrapper') and contains(text(), '{search_term}')]"
-    
-    # Wait for the element to be visible
+
+            # Wait for the element to be visible
             option = wait.until(EC.visibility_of_element_located((By.XPATH, element_xpath)))
 
-    # Click on the element
+            # Click on the element
             option.click()
             print("Clicked on the element")
             time.sleep(5)  # Adjust this delay as needed
 
-# Retrieve the table element again
-            table_element = web.find_element(By.ID, 'biddingGrid')
-            lot_code_elements = web.find_elements(By.XPATH, "//td[contains(@class, 'footable-visible')]//label[starts-with(@id, 'lblShortCode_')]")
-            
+            # Find the input fields for the rs values
+            rs_input_fields = web.find_elements(By.XPATH, "//td[contains(@class, 'footable-visible')]//input[@type='number']")
 
-# Retrieve lot IDs from recent_tenders
-            lot_ids = [str(tender.lot_id) for tender in recent_tenders_list]
-            print("!!!!!!!!!",lot_ids)
-
-# Iterate through the found elements
-            for element in lot_code_elements:
-                lot_code_website = element.text.strip()
-                print("***********",lot_code_website)  # Get the lot code text
-
-    # Check if the lot code from the website matches any lot ID from recent_tenders
-                if lot_code_website in lot_ids:
-                    print(f"Matching lot code found: {lot_code_website}")
-        # Get the corresponding tender object based on the lot ID
-                    corresponding_tender = next((tender for tender in recent_tenders_list if str(tender.lot_id) == lot_code_website), None)
-                    if corresponding_tender:
-                        print(f"Corresponding tender found for lot code {lot_code_website}.")
-            
-            # Find the input field associated with this lot code by tag name 'input'
-                        input_field = element.find_element(By.XPATH, "./following::td[contains(@class, 'footable-visible')]//input[@type='number']")
-            
-            # Input the quote value into the input field
-                        input_field.clear()
-                        rs_value = corresponding_tender.rs
-                        print("rs value",rs_value)
-                        input_field.send_keys(str(rs_value))  # Update input field with the rs value
-                    else:
-                        print("Corresponding tender not found.")
+              # Track the total number of rows processed
+            total_rows_processed = 0
+    
+            while total_rows_processed < len(recent_tenders_list):
+                # Find the input fields for the rs values
+                rs_input_fields = web.find_elements(By.XPATH, "//td[contains(@class, 'footable-visible')]//input[@type='number']")
+    
+                # Iterate through the recent_tenders_list
+                for tender in recent_tenders_list[total_rows_processed:]:
+                    # Check if the index is within the length of rs_input_fields
+                    if total_rows_processed < len(rs_input_fields):
+                        # Get the corresponding rs input field
+                        rs_input_field = rs_input_fields[total_rows_processed]
+    
+                        # Input the rs value into the input field
+                        rs_input_field.clear()
+                        rs_input_field.send_keys(str(tender.rs))  # Update input field with the rs value
+    
+                        # Increment the total rows processed
+                        total_rows_processed += 1
+    
+                # Check if it's the last row on the current page or the last row overall
+                if total_rows_processed % 25 == 0 or total_rows_processed == len(recent_tenders_list):
+                    # Click on the next button
+                    next_button = web.find_element(By.CSS_SELECTOR, 'a[data-ng-click="getInitialGridDataNext();"]')
+                    next_button.click()
+    
+                    # Wait for the new input fields to become clickable on the next page
+                    WebDriverWait(web, 10).until(EC.presence_of_all_elements_located((By.XPATH, "//td[contains(@class, 'footable-visible')]//input[@type='number']")))
+    
+            # After processing all rows, click on the submit button
             submit_bids = web.find_element(By.ID, "submitBids")
             submit_bids.click()
             time.sleep(2)
             confirm_bid = web.find_element(By.ID, "confirmBid")
             confirm_bid.click()
             time.sleep(2)
+
             # Find all elements that contain the lot codes
             lot_code_elements = web.find_elements(By.XPATH, "//td[contains(@class, 'footable-visible')]//label[starts-with(@id, 'lblShortCode_')]")
 
-# Find all elements that contain the messages
+            # Find all elements that contain the messages
             message_elements = web.find_elements(By.XPATH, "//td[contains(@class, 'rowUnderline')]//label[starts-with(@id, 'lblMsg_')]")
 
-# Extract and store the lot codes and messages together
+            # Extract and store the lot codes and messages together
             lot_codes_and_messages = []
             for lot_code_element, message_element in zip(lot_code_elements, message_elements):
                 lot_code = lot_code_element.text.strip()
                 message = message_element.text.strip()
                 lot_codes_and_messages.append({"Lot_Code": lot_code, "Message": message})
-# Now 'lot_codes_and_messages' holds pairs of lot codes and their respective messages
+
+            # Now 'lot_codes_and_messages' holds pairs of lot codes and their respective messages
             json_response = json.dumps(lot_codes_and_messages)
-            
-
-
 
         except Exception as ex:
             print("Error occurred:", ex)
-            time.sleep(10) 
-# Logout
-        
-
+            time.sleep(10)
+            
         # Close the browser window
         web.quit()
         json_response = json.dumps(lot_codes_and_messages)
@@ -214,174 +191,6 @@ def run_selenium(request):
     except Exception as e:
         return JsonResponse({'status': 'Error in Selenium execution', 'error_message': str(e)})
 
-
-def run_selenium_row(request):
-    print("AAAAAAAAAAAAAAAAAAAAAAa")
-    try:
-        filter_value = request.GET.get('filter', '')
-        print(filter_value)
-        if request.method == 'POST':
-            # Retrieve and parse the JSON data from the request body
-            data = json.loads(request.body)
-            print(data)
-            row_data = data.get('row_data')  # Access the 'row_data' object
-            
-            # Access specific fields from the received data
-            row_id = row_data.get('row_id')
-            commission_agent = row_data.get('commission_agent')
-            rs = row_data.get('rs')
-            lot_id = row_data.get('lot_id')
-
-            # Process the received data
-            print("Row ID:", row_id)
-            print("Commission Agent:", commission_agent)
-            print("RS:", rs)
-        # Fetch data from APMCETender model
-        '''today_date = timezone.localdate()
-        recent_tenders = APMCETender.objects.filter(created_on=today_date)
-        recent_tenders_list = list(recent_tenders)
-        print("@@@2",recent_tenders)'''
-
-        # Replace these with your actual credentials
-        username = "hublSkba"
-        password = "Skb@12345"
-
-        # Specify the path to your webdriver (download the appropriate driver for your browser)
-        # For example, if using Chrome, download the ChromeDriver: https://sites.google.com/chromium.org/driver/
-        s = ChromeService('C:\chromedriver-win64 (1)\chromedriver-win64\chromedriver.exe')
-        
-
-        
-        chrome_options = Options()
-        s = ChromeService(executable_path=chrome_driver_path, chrome_options=chrome_options)
-        web = webdriver.Chrome(service=s)
-
-        # Navigate to the login page
-        web.get("https://ka54.remsl.in/UMPeMandi/")
-        time.sleep(1)
-
-        # Locate the username and password input fields and submit button
-        username_field = web.find_element(By.CSS_SELECTOR, "#LoginControllerID > div.container > div.loginbox > div:nth-child(1) > form > div:nth-child(1) > input")
-        password_field = web.find_element(By.CSS_SELECTOR, "#LoginControllerID > div.container > div.loginbox > div:nth-child(1) > form > div:nth-child(2) > input")
-        submit_button = web.find_element(By.CSS_SELECTOR, "#LoginControllerID > div.container > div.loginbox > div:nth-child(1) > form > div:nth-child(4) > button")
-
-        # Input your credentials
-        username_field.send_keys(username)
-        password_field.send_keys(password)
-        submit_button.click()
-
-       
-
-        # Wait for a few seconds to observe the result (you can replace this with proper waiting mechanisms)
-        web.implicitly_wait(5)
-        time.sleep(15)
-
-        # Navigate to the tender page
-        web.get("https://ka54.remsl.in/UMPeMandi/views/index.html#/batchEtender?moduleId=200023")
-        time.sleep(10)
-
-        batch_dropdown = Select(web.find_element(By.NAME, 'batchId'))  # Replace with the actual name or identifier of the batch dropdown
-        batch_dropdown.select_by_visible_text("DRY CHILLY")  # Replace with the actual name of the batch from your data
-        time.sleep(5)
-
-        batch_dropdown = Select(web.find_element(By.NAME, 'batchId'))  # Replace with the actual name or identifier of the batch dropdown
-        batch_dropdown.select_by_visible_text("DRY CHILLY")  # Replace with the actual name of the batch from your data
-        time.sleep(5)
-        
-        
-        search_bar = web.find_element(By.ID, 'commissionAgent')
-        search_term = commission_agent
-
-        time.sleep(2)
-
-# Type the search term into the search bar
-        search_bar.send_keys(search_term)
-        time.sleep(5)
-        print("^^^^^^^^^^^^^")
-
-# Define the ID of the dropdown UL
-       # Find all elements with class 'ui-menu-item'
-        wait = WebDriverWait(web, 15)
-
-        try:
-    # Define the XPath for the desired option
-            element_xpath = f"//div[contains(@class, 'ui-menu-item-wrapper') and contains(text(), '{search_term}')]"
-    
-    # Wait for the element to be visible
-            option = wait.until(EC.visibility_of_element_located((By.XPATH, element_xpath)))
-
-    # Click on the element
-            option.click()
-            print("Clicked on the element")
-            time.sleep(5)  # Adjust this delay as needed
-
-# Retrieve the table element again
-            table_element = web.find_element(By.ID, 'biddingGrid')
-            
-
-# Retrieve lot IDs from recent_tenders
-            lot_code_elements = web.find_elements(By.XPATH, "//td[contains(@class, 'footable-visible')]//label[starts-with(@id, 'lblShortCode_')]")
-
-# Find the element that contains the specific lot code
-            matching_lot_code_element = None
-
-            for element in lot_code_elements:
-                lot_code_website = element.text.strip()
-                if lot_code_website == lot_id:
-                    matching_lot_code_element = element
-                    break
-
-            if matching_lot_code_element:
-                try:
-                    input_field = matching_lot_code_element.find_element(By.XPATH, "./following::td[contains(@class, 'footable-visible')]//input[@type='number']")
-                    rs_value = row_data.get('rs')  # Assuming 'rs' is obtained from row_data or somewhere else
-                    input_field.clear()
-                    input_field.send_keys(str(rs_value))
-                    time.sleep(3)
-                except NoSuchElementException as e:
-                    print("Error finding or interacting with the input field:", e)
-            else:
-                print("Matching lot code element not found.")
-            submit_bids = web.find_element(By.ID, "submitBids")
-            submit_bids.click()
-            time.sleep(5)
-            confirm_bid = web.find_element(By.ID, "confirmBid")
-            confirm_bid.click()
-            time.sleep(6)
-            # Find all elements that contain the lot codes
-            lot_code_elements = web.find_elements(By.XPATH, "//td[contains(@class, 'footable-visible')]//label[starts-with(@id, 'lblShortCode_')]")
-
-# Find all elements that contain the messages
-            message_elements = web.find_elements(By.XPATH, "//td[contains(@class, 'rowUnderline')]//label[starts-with(@id, 'lblMsg_')]")
-
-# Extract and store the lot codes and messages together
-            lot_codes_and_messages = []
-            for lot_code_element, message_element in zip(lot_code_elements, message_elements):
-                lot_code = lot_code_element.text.strip()
-                message = message_element.text.strip()
-                if lot_code == lot_id:
-                    lot_codes_and_messages.append({"Lot_Code": lot_code, "Message": message})
-                    break 
-            if lot_codes_and_messages:
-                json_response = json.dumps(lot_codes_and_messages)
-            else:
-                json_response = json.dumps({"Lot_Code": "", "Message": "Lot code not found."})
-# Now 'lot_codes_and_messages' holds pairs of lot codes and their respective messages
-            
-        
-        except Exception as ex:
-            print("Error occurred:", ex)
-            time.sleep(10) 
-# Logout
-        
-
-        # Close the browser window
-        web.quit()
-        json_response = json.dumps(lot_codes_and_messages)
-
-        return JsonResponse({'status': 'Selenium executed successfully', 'data': json_response})
-    except Exception as e:
-        return JsonResponse({'status': 'Error in Selenium execution', 'error_message': str(e)})
 
 
 
@@ -421,6 +230,7 @@ def admin_logout(request):
 def operator_logout(request):
     logout(request)
     return redirect('operator_login')
+from urllib.parse import urljoin
 
 def operator_login(request):
     if request.method == 'POST':
@@ -429,12 +239,69 @@ def operator_login(request):
         user = authenticate(request, username=email, password=password)
         if user is not None and user.user_type == 'operator':
             login(request, user)
+              # Delete previous date data
+            delete_previous_date_data()
+            # Perform the download in the background
+            download_latest_file()
             return redirect('operator_dashboard')
         else:
             messages.error(request, 'Invalid username or password.')
             return render(request, 'operator_login.html', {'login_failed': True})
 
     return render(request, 'operator_login.html')
+
+
+def ensure_directory_exists(directory):
+    os.makedirs(directory, exist_ok=True)
+    os.chmod(directory, stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH)
+
+def delete_previous_date_data():
+    past_date = timezone.now().date()
+    APMCTender.objects.filter(created_on__lt=past_date).delete()
+
+def download_latest_file():
+    # Define the URL of the file to download
+    base_url = 'https://placements.haegl.in/'
+    file_url = 'display_uploaded_file'
+
+    # Specify the file name to look for
+    file_name_prefix = 'excel_file/MasterTestData'
+
+    # Fetch the page content
+    response = requests.get(urljoin(base_url, file_url))
+    if response.status_code == 200:
+        # Parse the HTML content to find the link to the latest file
+        # You may need to use an HTML parsing library like BeautifulSoup for more complex HTML structures
+        # Here, a simple search for the file name prefix in the HTML content is shown
+        file_links = re.findall(r'href=[\'"]?([^\'" >]+)', response.text)
+        latest_file_link = next((link for link in file_links if file_name_prefix in link), None)
+
+        if latest_file_link:
+            print(latest_file_link)
+            # Check if the link is a relative URL and construct the full URL
+            if not latest_file_link.startswith(('http://', 'https://')):
+                latest_file_link = urljoin(base_url, latest_file_link)
+
+            # Construct the path to save the file with an absolute path
+            save_path = os.path.join(settings.BASE_DIR, 'media', 'assets', 'uploads', 'MasterTestData.xlsx')
+
+            # Ensure the 'uploads' directory exists, create it if not
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+            # Download the latest file
+            file_content = requests.get(latest_file_link).content
+
+            # Save the file to the specified location
+            with open(save_path, 'wb') as file:
+                file.write(file_content)
+
+            print("File downloaded successfully")
+
+        else:
+            print(f"No file link found with the prefix '{file_name_prefix}'")
+
+    else:
+        print(f"Failed to fetch the page. Status code: {response.status_code}")
 
 @login_required
 def add_operator(request):
@@ -445,7 +312,7 @@ def add_operator(request):
         # Check if the user with the given email already exists
         if NewUser.objects.filter(email=email).exists():
             return render(request, 'add_operator.html', {'error': 'User with this email already exists'})
-            
+
 
         first_name = request.POST.get('first_name')
         last_name = request.POST.get('last_name')
@@ -561,7 +428,6 @@ def forgot_password(request):
     try:
         if request.method == 'POST':
             username = request.POST.get('username')
-
             if not NewUser.objects.filter(username=username).first():
                 messages.success(request, 'Not user found with this username.')
                 return redirect('/forgot_password')
@@ -613,6 +479,7 @@ def applied_tender(request):
 
     # Get the latest available date for data
     latest_date = APMCTender.objects.latest('created_on').created_on if APMCTender.objects.exists() else date.today()
+    
 
     # Check for date filter in GET parameters
     filter_date = request.GET.get('date')
@@ -620,29 +487,17 @@ def applied_tender(request):
     if filter_date:
         try:
             filter_date = datetime.strptime(filter_date, '%Y-%m-%d').date()
-            obj_list = APMCTender.objects.filter(created_on=filter_date).order_by('-id')
+            obj_list = APMCTender.objects.filter(created_on=filter_date)
         except ValueError:
             # Handle invalid date format here
-            pass
+            obj_list = APMCTender.objects.none()
     else:
-        obj_list = APMCTender.objects.filter(created_on=date.today()).order_by('-id')
-
-    paginator = Paginator(obj_list, 10)  # Show 10 objects per page
-
-    # Default to the first page (latest 10 rows)
-    page = request.GET.get('page', 1)
-
-    try:
-        obj = paginator.page(page)
-    except PageNotAnInteger:
-        # If page is not an integer, deliver first page.
-        obj = paginator.page(1)
-    except EmptyPage:
-        # If page is out of range (e.g. 9999), deliver last page of results.
-        obj = paginator.page(paginator.num_pages)
+        obj_list = APMCTender.objects.filter(created_on=date.today())
+        for x in obj_list:
+            print(x.lot_code)
 
     context = {
-        'obj': obj,
+        'obj_list': obj_list,
         'default_date': date.today().strftime('%Y-%m-%d'),  # Set the default date
     }
 
@@ -708,25 +563,26 @@ def operator_tender(request):
     if request.user.user_type != 'operator':
         return HttpResponseForbidden()
     id = request.user.id
-    
+
     user = request.user.first_name
     last = request.user.last_name
-    
+
     # Get the latest available date for data
     latest_date = APMCTender.objects.latest('created_on').created_on if APMCTender.objects.exists() else date.today()
 
     # Check for date filter in GET parameters
     filter_date = request.GET.get('date')
-
+    print(filter_date)
     if filter_date:
         try:
             filter_date = datetime.strptime(filter_date, '%Y-%m-%d').date()
-            obj_list = APMCETender.objects.filter(created_on=filter_date).order_by('-id')
+            obj_list = APMCTender.objects.filter(created_on=filter_date).order_by('-id')
         except ValueError:
             # Handle invalid date format here
             pass
     else:
         obj_list = APMCTender.objects.filter(created_on=date.today()).order_by('-id')
+
 
     paginator = Paginator(obj_list, 10)  # Show 10 objects per page
 
@@ -767,7 +623,7 @@ def update_quote(request,id):
     obj = APMCTender.objects.get(id=i)
     data = APMCETender.objects.filter(tender_id_id=id)
     print(data)
-    
+
     context = {
     'obj':obj
     }
@@ -778,7 +634,7 @@ def update_quote(request,id):
             item.rs = request.POST.get('rs')
             item.save()
         print("!!!!!!!!!!!!!!!!!!!!!!!!1",obj.rs)
-        obj.save()  
+        obj.save()
         return redirect('/applied_tender')
     return render(request,'update_quote.html',context)
 
@@ -799,12 +655,12 @@ def get_grade_range(request):
 
 #demo
 def operator_dashboard(request):
-
     id = request.user.id
     user = request.user.first_name
     last = request.user.last_name
     unique_qualities = Grades.objects.values_list('quality', flat=True).distinct()
-    # Fetches unique values of 'quality' from the Grades model
+    file_path = ""
+
     if request.method == 'POST':
         select_commodity = request.POST.get('commodity')
         lot_id = request.POST.get('lot_id')
@@ -814,29 +670,44 @@ def operator_dashboard(request):
         quality = request.POST.get('quality')
         quote = request.POST.get('quote')
 
-        tender = APMCTender.objects.create(commodity=select_commodity,lot_id=lot_id,commission_agent=commission_agent,
-        Bags=bags,lot_code=lot_code,quality=quality,rs=quote,operator_id_id=id)
+        tender = APMCTender.objects.create(
+            commodity=select_commodity,
+            lot_id=lot_id,
+            commission_agent=commission_agent,
+            Bags=bags,
+            lot_code=lot_code,
+            quality=quality,
+            rs=quote,
+            operator_id_id=id
+        )
+
+    # Construct the file path based on the project's base directory
+    file_path = os.path.join(settings.BASE_DIR, 'media', 'assets', 'uploads', 'MasterTestData.xlsx')
 
 
-    # Retrieve initial batch options
-    file_path = os.path.join('media', 'assets', 'MasterTestData.xlsx')
+    # Check if the file exists before attempting to read it
+    if os.path.exists(file_path):
+        # Specify the sheet name using the sheet_name parameter
+        data = pd.read_excel(file_path, sheet_name='ReMS_Output')
 
-# Specify the sheet name using the sheet_name parameter
-    data = pd.read_excel(file_path, sheet_name='ReMS_Output')
+        # Extract unique values from the 'Commodity' column in the 'ReMS_Output' sheet
+        batch_options = data['Commodity'].unique().tolist()
 
-# Extract unique values from the 'Commodity' column in the 'ReMS_Output' sheet
-    batch_options = data['Commodity'].unique().tolist()
-
-    context = {'batch_options': batch_options,'user':user,'last':last,'unique_qualities':unique_qualities}
-    return render(request, 'operator_dashboard.html', context)
+        context = {'batch_options': batch_options, 'user': user, 'last': last, 'unique_qualities': unique_qualities}
+        return render(request, 'operator_dashboard.html', context)
+    else:
+        # Handle the case where the file does not exist
+        error_message = "The Excel file does not exist."
+        context = {'error_message': error_message}
+        return render(request, 'operator_login.html', context)
 
 def get_commission_agent(request):
     selected_batch = request.GET.get('commodity')
     if selected_batch:
-        file_path = os.path.join('media', 'assets', 'MasterTestData.xlsx')
+        file_path = os.path.join('media', 'assets','upload', 'MasterTestData.xlsx')
         data = pd.read_excel(file_path, sheet_name='ReMS_Output')
 
-        commission_agent_options = data[data['Commodity'] == selected_batch]['Commission_Agent'].unique().tolist()
+        commission_agent_options = data[data['Commodity'] == selected_batch]['Commission Agent'].unique().tolist()
 
         return JsonResponse(commission_agent_options, safe=False)
     return JsonResponse([], safe=False)
@@ -844,10 +715,10 @@ def get_commission_agent(request):
 def get_commission_agent(request):
     selected_batch = request.GET.get('commodity')
     if selected_batch:
-        file_path = os.path.join('media', 'assets', 'MasterTestData.xlsx')
+        file_path = os.path.join('media', 'assets','uploads', 'MasterTestData.xlsx')
         data = pd.read_excel(file_path, sheet_name='ReMS_Output')
 
-        commission_agent_options = data[data['Commodity'] == selected_batch]['Commission_Agent'].unique().tolist()
+        commission_agent_options = data[data['Commodity'] == selected_batch]['Commission Agent'].unique().tolist()
 
         return JsonResponse(commission_agent_options, safe=False)
     return JsonResponse([], safe=False)
@@ -856,7 +727,7 @@ def get_lot_id(request):
     selected_batch = request.GET.get('commission_agent')
     try:
         if selected_batch:
-            file_path = os.path.join('media', 'assets', 'MasterTestData.xlsx')
+            file_path = os.path.join('media', 'assets','uploads', 'MasterTestData.xlsx')
             data = pd.read_excel(file_path, sheet_name='ReMS_Output')
 
             # Drop columns you want to exclude
@@ -866,8 +737,8 @@ def get_lot_id(request):
         # Replace NaN values with 'null'
             data_cleaned = data_cleaned.where(pd.notna(data_cleaned), 'null')
 
-            selected_rows = data_cleaned[data_cleaned['Commission_Agent'] == selected_batch].to_dict(orient='records')
-     
+            selected_rows = data_cleaned[data_cleaned['Commission Agent'] == selected_batch].to_dict(orient='records')
+
             print(selected_rows)
             # Fetch grades data for all qualities
             grades_data = Grades.objects.values('quality', 'minimum', 'maximum')
@@ -882,6 +753,8 @@ def get_lot_id(request):
         print(f"Error in get_lot_id view: {e}")
     return JsonResponse([], safe=False)
 
+
+# submission for operator
 from django.views.decorators.http import require_POST
 @require_POST
 def submit_all_data(request):
@@ -896,10 +769,10 @@ def submit_all_data(request):
         for data_row in submitted_data:
             APMCTender.objects.create(
                 commodity=data_row.get('Commodity', ''),
-                commission_agent=data_row.get('Commission_Agent', ''),
+                commission_agent=data_row.get('Commission Agent', ''),
                 lot_id=data_row.get('Lot ID', ''),
                 Bags=data_row.get('Bags', 0),
-                lot_code=data_row.get('Lot_Code', ''),
+                lot_code=data_row.get('Lot Code', ''),
                 quality=data_row.get('Quality', ''),
                 rs=data_row.get('Quote (Rs./UOM)', 0),
                 operator_id_id=operator_id,  # Replace with actual operator ID logic
@@ -981,12 +854,15 @@ def submit_row(request, row_id):
             }
         })
 
+from django.db import IntegrityError
 
 def submit_all_rows(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         rows = data.get('rows', [])
         print("!!!!!!!!!",rows)
+
+        rows = data.get('rows', [])
 
         response_data = []
         rows_added = False  # Flag to check if new rows were added
@@ -1034,3 +910,21 @@ def submit_all_rows(request):
             })
 
         return JsonResponse({'response_data': response_data})
+
+from django.views.decorators.csrf import csrf_exempt
+@csrf_exempt
+def update_apmc_tender_rs(request, apmc_tender_id):
+    if request.method == 'POST':
+        # Get the APMCTender instance
+        apmc_tender = get_object_or_404(APMCTender, id=apmc_tender_id)
+
+        # Get the new value from the request
+        new_rs_value = request.POST.get('rs')
+
+        # Update the rs field
+        apmc_tender.rs = new_rs_value
+        apmc_tender.save()
+
+        return JsonResponse({'status': 'success'})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
