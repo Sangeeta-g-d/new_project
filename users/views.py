@@ -125,59 +125,68 @@ def run_selenium(request):
             # Find the input fields for the rs values
             rs_input_fields = web.find_elements(By.XPATH, "//td[contains(@class, 'footable-visible')]//input[@type='number']")
 
-              # Track the total number of rows processed
             total_rows_processed = 0
-    
-            while total_rows_processed < len(recent_tenders_list):
-                # Find the input fields for the rs values
-                rs_input_fields = web.find_elements(By.XPATH, "//td[contains(@class, 'footable-visible')]//input[@type='number']")
-    
+
+# List to store responses from each page
+            all_responses = []
+
+            # Iterate through the pages
+            while True:
                 # Iterate through the recent_tenders_list
-                for tender in recent_tenders_list[total_rows_processed:]:
+                for index, tender in enumerate(recent_tenders_list[total_rows_processed:]):
                     # Check if the index is within the length of rs_input_fields
-                    if total_rows_processed < len(rs_input_fields):
+                    if index < len(rs_input_fields):
                         # Get the corresponding rs input field
-                        rs_input_field = rs_input_fields[total_rows_processed]
-    
+                        rs_input_field = rs_input_fields[index]
+
                         # Input the rs value into the input field
                         rs_input_field.clear()
-                        rs_input_field.send_keys(str(tender.rs))  # Update input field with the rs value
-    
+                        rs_value = tender.rs
+                        print("rs value", rs_value)
+                        rs_input_field.send_keys(str(rs_value))  # Update input field with the rs value
+
                         # Increment the total rows processed
                         total_rows_processed += 1
-    
-                # Check if it's the last row on the current page or the last row overall
-                if total_rows_processed % 25 == 0 or total_rows_processed == len(recent_tenders_list):
+
+                # Check if it's the last row in the current page or the last row overall
+                if total_rows_processed < len(recent_tenders_list):
                     # Click on the next button
                     next_button = web.find_element(By.CSS_SELECTOR, 'a[data-ng-click="getInitialGridDataNext();"]')
                     next_button.click()
-    
-                    # Wait for the new input fields to become clickable on the next page
-                    WebDriverWait(web, 10).until(EC.presence_of_all_elements_located((By.XPATH, "//td[contains(@class, 'footable-visible')]//input[@type='number']")))
-    
-            # After processing all rows, click on the submit button
-            submit_bids = web.find_element(By.ID, "submitBids")
-            submit_bids.click()
-            time.sleep(2)
-            confirm_bid = web.find_element(By.ID, "confirmBid")
-            confirm_bid.click()
-            time.sleep(2)
+                    time.sleep(5)  # Adjust this delay as needed
 
-            # Find all elements that contain the lot codes
-            lot_code_elements = web.find_elements(By.XPATH, "//td[contains(@class, 'footable-visible')]//label[starts-with(@id, 'lblShortCode_')]")
+                    # Wait for the new input fields to appear on the next page
+                    rs_input_fields = WebDriverWait(web, 10).until(EC.presence_of_all_elements_located((By.XPATH, "//td[contains(@class, 'footable-visible')]//input[@type='number']")))
+                else:
+                    # After processing all rows on the current page, click on the submit button
+                    submit_bids = web.find_element(By.ID, "submitBids")
+                    submit_bids.click()
+                    time.sleep(2)
+                    confirm_bid = web.find_element(By.ID, "confirmBid")
+                    confirm_bid.click()
+                    time.sleep(2)
 
-            # Find all elements that contain the messages
-            message_elements = web.find_elements(By.XPATH, "//td[contains(@class, 'rowUnderline')]//label[starts-with(@id, 'lblMsg_')]")
+                    # Find all elements that contain the lot codes
+                    lot_code_elements = web.find_elements(By.XPATH, "//td[contains(@class, 'footable-visible')]//label[starts-with(@id, 'lblShortCode_')]")
 
-            # Extract and store the lot codes and messages together
-            lot_codes_and_messages = []
-            for lot_code_element, message_element in zip(lot_code_elements, message_elements):
-                lot_code = lot_code_element.text.strip()
-                message = message_element.text.strip()
-                lot_codes_and_messages.append({"Lot_Code": lot_code, "Message": message})
+                    # Find all elements that contain the messages
+                    message_elements = web.find_elements(By.XPATH, "//td[contains(@class, 'rowUnderline')]//label[starts-with(@id, 'lblMsg_')]")
 
-            # Now 'lot_codes_and_messages' holds pairs of lot codes and their respective messages
-            json_response = json.dumps(lot_codes_and_messages)
+                    # Extract and store the lot codes and messages together for this page
+                    lot_codes_and_messages = []
+                    for lot_code_element, message_element in zip(lot_code_elements, message_elements):
+                        lot_code = lot_code_element.text.strip()
+                        message = message_element.text.strip()
+                        lot_codes_and_messages.append({"Lot_Code": lot_code, "Message": message})
+
+                    # Now 'lot_codes_and_messages' holds pairs of lot codes and their respective messages for this page
+                    all_responses.extend(lot_codes_and_messages)
+
+                    # Break out of the loop if all rows have been processed
+                    break
+                
+# Convert the list of responses to JSON
+            json_response = json.dumps(all_responses)
 
         except Exception as ex:
             print("Error occurred:", ex)
